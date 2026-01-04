@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraper Status Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Scraper Status</h1>
+            <div class="status-badge" id="global-status">Loading...</div>
+        </header>
+
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <h3>Page Count</h3>
+                <p id="page-count">-</p>
+            </div>
+            <div class="metric-card">
+                <h3>Total Scrapers</h3>
+                <p id="total-scrapers-count">-</p>
+            </div>
+            <div class="metric-card">
+                <h3>Tasks Queue</h3>
+                <p id="tasks-count">-</p>
+            </div>
+            <div class="metric-card">
+                <h3>Active Scrapers</h3>
+                <p id="active-scrapers-count">-</p>
+            </div>
+            <div class="metric-card">
+                <h3>Last Updated</h3>
+                <p id="last-updated">-</p>
+            </div>
+        </section>
+
+        <section class="scrapers-section">
+            <div class="scrapers-header-row">
+                <h2>Scrapers Details</h2>
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search by Title or BSN...">
+                </div>
+            </div>
+            
+            <div class="scrapers-grid" id="scrapers-container">
+                <!-- Scraper cards will be injected here -->
+            </div>
+
+            <div class="pagination-controls">
+                <button id="prev-page-btn" disabled>Previous</button>
+                <span id="page-info">Page 1</span>
+                <button id="next-page-btn" disabled>Next</button>
+            </div>
+        </section>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

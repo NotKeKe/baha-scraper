@@ -8,8 +8,10 @@ from frozendict import frozendict
 import orjson
 import aiofiles
 import logging
+from typing import Any
 
-from utils import HttpxClient, SEM, DATA_DIR
+from .utils import HttpxClient, SEM, DATA_DIR
+from .status import Status
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +21,28 @@ class Scraper:
         self.bsn = bsn
 
         self.running_tasks: list[asyncio.Task] = []
+        Status.scrapers_status[self.bsn] = {
+            'theme_title': self.title,
+            'post_list_status': 'none',
+            'post_status': 'none',
+            'start_time': datetime.now(timezone.utc),
+            'end_time': None
+        }   
+
+    def _update_status(self, key: str, value: Any):
+        Status.scrapers_status[self.bsn][key] = value
 
     async def _get_post_list(self) -> set[str]:
         async with SEM:
             resp = await HttpxClient.get(f'https://forum.gamer.com.tw/B.php?bsn={self.bsn}')
             if resp.status_code != 200: return set()
+            self._update_status('post_list_status', 'fetching')
             logger.info(f'Got {self.bsn}\'s post list.')
 
             soup = BeautifulSoup(resp.text, 'html.parser')
             
             all_a = soup.findAll('a')
+            self._update_status('post_list_status', 'fetched')
             return set(urljoin(str(resp.url), a['href']) for a in all_a if a.get('href', '').startswith('C.php'))
         
     async def _get_post(self, post_url: str):
@@ -36,7 +50,7 @@ class Scraper:
             try:
                 resp = await HttpxClient.get(post_url)
                 if resp.status_code != 200: return
-                
+                self._update_status('post_status', f'fetching_{post_url}')
                 soup = BeautifulSoup(resp.text, 'html.parser')
 
                 # 該篇貼文的 標題
@@ -155,6 +169,7 @@ class Scraper:
                     await f.write(orjson.dumps(FINAL_RESULT) + b'\n')
 
                 logger.info(f'Wrote {post_url}')
+                self._update_status('post_status', f'fetched_{post_url}')
             except:
                 logger.error(f'Error while fetching {post_url}', exc_info=True)
 
@@ -176,5 +191,6 @@ class Scraper:
                 task.cancel()
 
             await asyncio.gather(*self.running_tasks)
+            self._update_status('end_time', datetime.now(timezone.utc))
         except asyncio.CancelledError:
             pass

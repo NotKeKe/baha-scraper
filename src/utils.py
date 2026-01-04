@@ -88,3 +88,7 @@ class StreamToLogger:
 sys.stdout = StreamToLogger(logging.getLogger("stdout"), logging.INFO)
 sys.stderr = StreamToLogger(logging.getLogger("stderr"), logging.ERROR)
 setup_logging()
+
+def update_status(status_str: str):
+    from .status import Status
+    Status.curr_status = status_str
