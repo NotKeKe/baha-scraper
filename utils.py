@@ -43,7 +43,7 @@ def setup_logging():
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     # 終端機 Handler 維持不變
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(sys.__stderr__)
     console_handler.setFormatter(log_format)
   
     # --- 主要修改的部分在這裡 ---

@@ -12,3 +12,8 @@ test.json
 data/*
 logs/*
 exports
+*.zip
+
+tests/test.html
+tests/0.md
+tests/0.html
