@@ -1,9 +1,9 @@
 import asyncio
 
-from scraper import Scraper
+from src.scraper import Scraper
 
 async def main():
-    scraper = Scraper('test', '17608')
-    print(await scraper._get_post_list())
+    scraper = Scraper('test', '1')
+    await scraper.scrape()
 
 asyncio.run(main())

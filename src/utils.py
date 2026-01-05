@@ -8,6 +8,7 @@ import logging
 import logging.handlers
 import sys
 import os
+import re
 
 if TYPE_CHECKING:
     from scraper import Scraper
@@ -18,12 +19,26 @@ header = {
 }
 
 
-HttpxClient = httpx.AsyncClient(
-    limits=_limit, 
-    headers=header, 
-    proxy=os.getenv("HTTP_PROXY")
-) # cookie 會被自動維護
+HttpxClient: httpx.AsyncClient | None = httpx.AsyncClient(
+            limits=_limit, 
+            headers=header, 
+            proxy=os.getenv("HTTP_PROXY")
+        )
 
+async def init_httpx_client():
+    global HttpxClient
+    if HttpxClient is None or HttpxClient.is_closed:
+        HttpxClient = httpx.AsyncClient(
+            limits=_limit, 
+            headers=header, 
+            proxy=os.getenv("HTTP_PROXY")
+        )
+
+async def close_httpx_client():
+    global HttpxClient
+    if HttpxClient and not HttpxClient.is_closed:
+        await HttpxClient.aclose()
+    HttpxClient = None
 
 SCRAPERS: list[Scraper] = []
 
@@ -98,3 +113,26 @@ setup_logging()
 def update_status(status_str: str):
     from .status import Status
     Status.curr_status = status_str
+
+unname_file_idx = 1
+def safe_filename(filename: str, replacement="_") -> str:
+    global unname_file_idx
+    # 1. 替換掉 Windows 禁用的字元: < > : " / \ | ? * 以及控制字元 (0-31)
+    # [<>:"/\\|?*\x00-\x1f]
+    filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', replacement, filename)
+    
+    # 2. 移除結尾的空格與句點 (Windows 會自動修剪掉，但為了安全建議手動處理)
+    filename = filename.rstrip(". ")
+    
+    # 3. 處理 Windows 保留名稱 (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+    # 如果檔名剛好是這些，就在前面加個底線或其他字元
+    reserved_names = r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$"
+    if re.match(reserved_names, filename, re.IGNORECASE):
+        filename = replacement + filename
+        
+    # 4. 確保檔名不為空且長度限制 (Windows 一般限制為 255 字元)
+    if not filename:
+        filename = "unnamed_file" + str(unname_file_idx)
+        unname_file_idx += 1
+        
+    return filename[:255]

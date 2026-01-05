@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from .utils import HttpxClient, SCRAPERS, update_status
+from .utils import HttpxClient, SCRAPERS, update_status, init_httpx_client, close_httpx_client
 from .scraper import Scraper
 
 logger = logging.getLogger(__name__)
@@ -11,6 +11,10 @@ TASKS = []
 async def main():
     global page_count, TASKS
     try:
+        # init httpx client
+        await init_httpx_client()
+        assert HttpxClient is not None
+
         page_count = 1
         logger.info('Fetching all themes...')
         update_status('fetching_all_themes_start')
@@ -72,7 +76,7 @@ async def main():
             logger.error('Error while closing TASKS', exc_info=True)
 
         # close httpx client
-        await HttpxClient.aclose()
+        await close_httpx_client()
 
 
 if __name__ == '__main__':

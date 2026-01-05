@@ -10,7 +10,7 @@ import aiofiles
 import logging
 from typing import Any
 
-from .utils import HttpxClient, SEM, DATA_DIR
+from .utils import HttpxClient, SEM, DATA_DIR, init_httpx_client, safe_filename
 from .status import Status
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,10 @@ class Scraper:
             'end_time': None
         }   
 
+        self.is_first_run: bool = True
+
+        self.WRITE_LOCK = asyncio.Lock()
+
     def _update_status(self, key: str, value: Any):
         if key not in Status.scrapers_status[self.bsn]:
             raise ValueError(f'Invalid key: {key}')
@@ -36,6 +40,9 @@ class Scraper:
 
     async def _get_post_list(self) -> set[str]:
         async with SEM:
+            await init_httpx_client()
+            assert HttpxClient is not None
+
             resp = await HttpxClient.get(f'https://forum.gamer.com.tw/B.php?bsn={self.bsn}')
             if resp.status_code != 200: return set()
             self._update_status('post_list_status', 'fetching')
@@ -49,6 +56,9 @@ class Scraper:
         
     async def _get_post(self, post_url: str): # C.php
         async with SEM:
+            await init_httpx_client()
+            assert HttpxClient is not None
+
             try:
                 resp = await HttpxClient.get(post_url)
                 if resp.status_code != 200: return
@@ -167,8 +177,15 @@ class Scraper:
                     FINAL_RESULT['floors'][idx]['comments'] = comments
 
                 # 寫入
-                async with aiofiles.open(DATA_DIR / f'{self.bsn}-{self.title}.jsonl', 'ab') as f:
-                    await f.write(orjson.dumps(FINAL_RESULT) + b'\n')
+                async with self.WRITE_LOCK:
+                    if self.is_first_run:
+                        # 第一次啟動的話就清空原本的檔案，因為可能會手動進行多次爬蟲
+                        self.is_first_run = False
+                        async with aiofiles.open(DATA_DIR / f'{self.bsn}-{safe_filename(self.title)}.jsonl', 'wb') as f:
+                            await f.write(b'')
+
+                    async with aiofiles.open(DATA_DIR / f'{self.bsn}-{safe_filename(self.title)}.jsonl', 'ab') as f:
+                        await f.write(orjson.dumps(FINAL_RESULT) + b'\n')
 
                 logger.info(f'Wrote {post_url}')
                 self._update_status('post_status', f'fetched_{post_url}')
@@ -178,6 +195,7 @@ class Scraper:
     
     async def scrape(self):
         try:
+            await init_httpx_client()
             post_list = await self._get_post_list()
 
             for post_url in post_list:
