@@ -4,7 +4,7 @@ services:
   warp:
     image: caomingjun/warp
     container_name: warp
-    restart: always
+    restart: unless-stopped
     device_cgroup_rules:
       - 'c 10:200 rwm'
     environment:
@@ -22,7 +22,7 @@ services:
   scraper:
     build: .
     container_name: baha-scraper
-    restart: always
+    restart: unless-stopped
     depends_on:
       - warp
     ports:
