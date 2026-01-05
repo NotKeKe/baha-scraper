@@ -3,6 +3,7 @@ from bs4.element import Tag
 from urllib.parse import urljoin
 import asyncio
 from datetime import datetime, timezone
+from httpx import Response
 from markdownify import markdownify as md
 from frozendict import frozendict
 import orjson
@@ -10,6 +11,8 @@ import aiofiles
 import logging
 from typing import Any
 import random
+
+from src.main import page_count
 
 from .utils import HttpxClient, SEM, DATA_DIR, init_httpx_client, safe_filename
 from .status import Status
@@ -39,7 +42,7 @@ class Scraper:
             raise ValueError(f'Invalid key: {key}')
         Status.scrapers_status[self.bsn][key] = value
     
-    async def _fetch_with_retry(self, url: str, retries: int = 5) -> Any:
+    async def _fetch_with_retry(self, url: str, retries: int = 5) -> Response | None:
         base_delay = 5
         assert HttpxClient is not None
         for i in range(retries):
@@ -57,26 +60,35 @@ class Scraper:
                 await asyncio.sleep(random.uniform(1, 3))
         return None
 
-    async def _get_post_list(self) -> set[str]:
+    async def _get_post_list(self) -> set[str]: # B.php, 單一bsn 的全部貼文連結
         async with SEM:
             await init_httpx_client()
             assert HttpxClient is not None
 
             self._update_status('post_list_status', 'fetching')
-            resp = await self._fetch_with_retry(f'https://forum.gamer.com.tw/B.php?bsn={self.bsn}')
-            if not resp or resp.status_code != 200: 
-                self._update_status('post_list_status', 'error')
-                logger.info(f'Failed to get {self.bsn}\'s post list, status code: {resp.status_code if resp else "None"}')
-                return set()
-            logger.info(f'Got {self.bsn}\'s post list.')
+            page_count = 1
+            all_urls = set()
 
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            
-            all_a = soup.findAll('a')
-            self._update_status('post_list_status', 'fetched')
-            return set(urljoin(str(resp.url), a['href']) for a in all_a if a.get('href', '').startswith('C.php'))
-        
-    async def _get_post(self, post_url: str): # C.php
+            while True:
+                resp = await self._fetch_with_retry(f'https://forum.gamer.com.tw/B.php?page={page_count}&bsn={self.bsn}')
+                if not resp or resp.status_code != 200: 
+                    logger.info(f'Failed to get {self.bsn}\'s post list, status code: {resp.status_code if resp else "None"}')
+                    self._update_status('post_list_status', 'fetched')
+
+                    # 出錯就直接回傳
+                    return all_urls
+
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                
+                all_a = soup.findAll('a')
+                _all_urls = set(urljoin(str(resp.url), a['href']) for a in all_a if a.get('href', '').startswith('C.php'))
+                all_urls.update(_all_urls)
+                
+                page_count += 1
+
+                await asyncio.sleep(random.uniform(1, 3))
+
+    async def _get_post(self, post_url: str): # C.php, 單一貼文
         async with SEM:
             await init_httpx_client()
             assert HttpxClient is not None

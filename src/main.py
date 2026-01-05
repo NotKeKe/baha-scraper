@@ -3,6 +3,7 @@ import logging
 
 from .utils import HttpxClient, SCRAPERS, update_status, init_httpx_client, close_httpx_client
 from .scraper import Scraper
+from .append_to_db import init_tables
 
 logger = logging.getLogger(__name__)
 page_count = 0
@@ -14,6 +15,9 @@ async def main():
         # init httpx client
         await init_httpx_client()
         assert HttpxClient is not None
+
+        # init tables
+        await init_tables()
 
         page_count = 1
         logger.info('Fetching all themes...')
