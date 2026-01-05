@@ -4,6 +4,7 @@ import logging
 import uvicorn
 
 from src.main import main as scraper
+from src import utils
 from app.app import app
 
 logger = logging.getLogger(__name__)
@@ -22,10 +23,10 @@ async def run_server():
     await server.serve()
 
 async def main():
-    await asyncio.gather(
-        scraper(),
-        run_server(),
-    )
+    # init task
+    utils.TOP_SCRAPE_TASK = asyncio.create_task(scraper())
+    # api server
+    await run_server()
 
 
 if __name__ == '__main__':

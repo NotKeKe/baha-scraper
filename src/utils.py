@@ -13,17 +13,15 @@ import re
 if TYPE_CHECKING:
     from scraper import Scraper
 
+TOP_SCRAPE_TASK: asyncio.Task | None = None
+
 _limit = httpx.Limits(max_keepalive_connections=51, max_connections=50)
 header = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
 
-HttpxClient: httpx.AsyncClient | None = httpx.AsyncClient(
-            limits=_limit, 
-            headers=header, 
-            proxy=os.getenv("HTTP_PROXY")
-        )
+HttpxClient: httpx.AsyncClient | None = httpx.AsyncClient(limits=_limit, headers=header, proxy=os.getenv("HTTP_PROXY"))
 
 async def init_httpx_client():
     global HttpxClient

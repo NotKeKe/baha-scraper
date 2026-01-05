@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevBtn = document.getElementById('prev-page-btn');
     const nextBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
+    const refreshBtn = document.getElementById('refresh-btn');
+
 
     // State
     let currentPage = 1;
@@ -154,6 +156,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // We rely on disabled state, but double check
         currentPage++;
         fetchStatus();
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to restart the scraper?')) return;
+
+        const originalText = refreshBtn.textContent;
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Requesting...';
+
+        try {
+            const res = await fetch('/api/refresh', { method: 'POST' });
+            const data = await res.json();
+
+            if (res.ok && data.status === 'success') {
+                // Success
+                fetchStatus();
+            } else {
+                alert(data.message || 'Failed to start scraper');
+            }
+        } catch (error) {
+            console.error('Error restarting scraper:', error);
+            alert('Connection Error');
+        } finally {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = originalText;
+        }
     });
 
     // Initial fetch

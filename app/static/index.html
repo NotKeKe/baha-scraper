@@ -13,7 +13,10 @@
     <div class="container">
         <header class="header">
             <h1>Scraper Status</h1>
-            <div class="status-badge" id="global-status">Loading...</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="refresh-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Restart Scraper</button>
+                <div class="status-badge" id="global-status">Loading...</div>
+            </div>
         </header>
 
         <section class="metrics-grid">

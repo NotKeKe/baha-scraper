@@ -5,6 +5,9 @@ from fastapi.responses import FileResponse
 import os
 
 from src.status import Status
+from src import utils
+from src.main import main as scraper_main
+import asyncio
 
 app = FastAPI()
 
@@ -57,3 +60,11 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
             "memory_used": mem.used
         }
     }
+
+@app.post('/api/refresh')
+async def refresh_scraper():
+    if utils.TOP_SCRAPE_TASK and not utils.TOP_SCRAPE_TASK.done():
+        return {"status": "error", "message": "Scraper is already running"}
+    
+    utils.TOP_SCRAPE_TASK = asyncio.create_task(scraper_main())
+    return {"status": "success", "message": "Scraper started"}
