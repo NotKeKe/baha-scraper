@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeScrapersEl = document.getElementById('active-scrapers-count');
     const totalScrapersEl = document.getElementById('total-scrapers-count');
     const tasksCountEl = document.getElementById('tasks-count');
+    const cpuUsageEl = document.getElementById('cpu-usage');
+    const memUsageEl = document.getElementById('mem-usage');
     const lastUpdatedEl = document.getElementById('last-updated');
     const scrapersContainer = document.getElementById('scrapers-container');
 
@@ -52,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
             activeScrapersEl.textContent = Object.values(data.scrapers_status).filter(s => s.post_status !== 'none').length; // Estimate
             totalScrapersEl.textContent = data.total_scrapers_count;
             tasksCountEl.textContent = data.tasks_count;
+            cpuUsageEl.textContent = data.system_metrics.cpu_usage + '%';
+            memUsageEl.textContent = data.system_metrics.memory_usage + '%';
             lastUpdatedEl.textContent = new Date().toLocaleTimeString();
 
             // Update Scrapers List

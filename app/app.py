@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import psutil
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
@@ -34,6 +35,10 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
     end = start + limit
     paginated_items = scrapers_list[start:end]
     paginated_scrapers = dict(paginated_items)
+    
+    # Get System Metrics
+    cpu_usage = psutil.cpu_percent(interval=None)
+    memory_usage = psutil.virtual_memory().percent
 
     return {
         "curr_status": Status.curr_status,
@@ -43,5 +48,9 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
         "total_scrapers_count": len(Status.scrapers),
         "filtered_count": len(scrapers_list),
         "page": page,
-        "limit": limit
+        "limit": limit,
+        "system_metrics": {
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage
+        }
     }

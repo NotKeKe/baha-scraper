@@ -15,29 +15,33 @@ async def main():
         logger.info('Fetching all themes...')
         update_status('fetching_all_themes_start')
         while True:
-            url = f'https://api.gamer.com.tw/forum/v1/board_list.php?category=&page={page_count}&origin=forum'
-            resp = await HttpxClient.get(url)
-            if resp.status_code != 200:
-                break
+            try:
+                url = f'https://api.gamer.com.tw/forum/v1/board_list.php?category=&page={page_count}&origin=forum'
+                resp = await HttpxClient.get(url)
+                if resp.status_code != 200:
+                    break
 
-            data = resp.json()
-            all_list = data['data']['list']
-            if not all_list: break
+                data = resp.json()
+                all_list = data['data']['list']
+                if not all_list: break
 
-            # get info
-            all_themes = [
-                (item['title'].strip(), item["bsn"]) # 主題, 該主題的 bsn
-                for item in all_list
-            ]
+                # get info
+                all_themes = [
+                    (item['title'].strip(), item["bsn"]) # 主題, 該主題的 bsn
+                    for item in all_list
+                ]
 
-            # 遍歷所有主題
-            for title, bsn in all_themes:
-                scraper = Scraper(title, bsn)
-                SCRAPERS.append(scraper)
+                # 遍歷所有主題
+                for title, bsn in all_themes:
+                    scraper = Scraper(title, bsn)
+                    SCRAPERS.append(scraper)
+                    await asyncio.sleep(0.0001)
 
-        
-            page_count += 1
-            update_status(f'fetching_all_themes_{page_count}')
+            
+                page_count += 1
+                update_status(f'fetching_all_themes_{page_count}')
+            finally:
+                await asyncio.sleep(0.0001)
 
         update_status('fetching_all_themes_end')
         TASKS = [asyncio.create_task(scraper.scrape()) for scraper in SCRAPERS]

@@ -23,7 +23,7 @@ SCRAPERS: list[Scraper] = []
 
 SEM = asyncio.Semaphore(30)
 
-DATA_DIR = Path(__file__).parent / 'data'
+DATA_DIR = Path('data')
 DATA_DIR.mkdir(exist_ok=True)
 
 log_dir = Path("logs")

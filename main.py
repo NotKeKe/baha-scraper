@@ -1,12 +1,23 @@
 import asyncio
+import os
+import logging
+import uvicorn
 
 from src.main import main as scraper
 from app.app import app
 
-import uvicorn
+logger = logging.getLogger(__name__)
 
 async def run_server():
-    config = uvicorn.Config(app, host="0.0.0.0", port=80, log_level="info")
+    env_port = os.getenv("PORT")
+    logger.info(f'Env PORT: `{env_port}`')
+    if not env_port:
+        logger.warning(f'Env PORT is not set, using default port 10972')
+        env_port = 10972
+    else:
+        env_port = int(env_port)
+
+    config = uvicorn.Config(app, host="0.0.0.0", port=env_port, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
 
@@ -18,4 +29,7 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        logger.info('Closing the main entry point...')
