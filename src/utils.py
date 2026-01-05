@@ -7,17 +7,23 @@ from pathlib import Path
 import logging
 import logging.handlers
 import sys
+import os
 
 if TYPE_CHECKING:
     from scraper import Scraper
-
 
 _limit = httpx.Limits(max_keepalive_connections=51, max_connections=50)
 header = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
-HttpxClient = httpx.AsyncClient(limits=_limit, headers=header) # cookie 會被自動維護
+
+HttpxClient = httpx.AsyncClient(
+    limits=_limit, 
+    headers=header, 
+    proxy=os.getenv("HTTP_PROXY")
+) # cookie 會被自動維護
+
 
 SCRAPERS: list[Scraper] = []
 

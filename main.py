@@ -12,8 +12,8 @@ async def run_server():
     env_port = os.getenv("PORT")
     logger.info(f'Env PORT: `{env_port}`')
     if not env_port:
-        logger.warning(f'Env PORT is not set, using default port 10972')
-        env_port = 10972
+        logger.warning(f'Env PORT is not set, using default port 15913')
+        env_port = 15913
     else:
         env_port = int(env_port)
 
