@@ -160,7 +160,8 @@ h1 {
     border: 1px solid var(--border-color);
     background-color: var(--card-bg);
     color: var(--text-primary);
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
 }
 
 .pagination-controls {
@@ -213,5 +214,22 @@ h1 {
 .detail-item span:last-child {
     color: var(--text-primary);
     display: block;
+    margin-top: 0.25rem;
+}
+
+.metric-value-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-primary {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.metric-secondary {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
     margin-top: 0.25rem;
 }

@@ -22,6 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchQuery = '';
     let debounceTimer;
 
+    function formatBytes(bytes, decimals = 2) {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    }
+
     function formatDate(dateString) {
         if (!dateString) return '-';
         return new Date(dateString).toLocaleString();
@@ -54,8 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
             activeScrapersEl.textContent = Object.values(data.scrapers_status).filter(s => s.post_status !== 'none').length; // Estimate
             totalScrapersEl.textContent = data.total_scrapers_count;
             tasksCountEl.textContent = data.tasks_count;
-            cpuUsageEl.textContent = data.system_metrics.cpu_usage + '%';
-            memUsageEl.textContent = data.system_metrics.memory_usage + '%';
+            cpuUsageEl.innerHTML = `
+                <div class="metric-value-group">
+                    <span class="metric-primary">${data.system_metrics.cpu_usage}%</span>
+                </div>`;
+
+            const mem = data.system_metrics;
+            memUsageEl.innerHTML = `
+                <div class="metric-value-group">
+                    <span class="metric-primary">${mem.memory_usage}%</span>
+                    <span class="metric-secondary">${formatBytes(mem.memory_used)} / ${formatBytes(mem.memory_total)}</span>
+                </div>`;
             lastUpdatedEl.textContent = new Date().toLocaleTimeString();
 
             // Update Scrapers List

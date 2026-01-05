@@ -38,7 +38,7 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
     
     # Get System Metrics
     cpu_usage = psutil.cpu_percent(interval=None)
-    memory_usage = psutil.virtual_memory().percent
+    mem = psutil.virtual_memory()
 
     return {
         "curr_status": Status.curr_status,
@@ -51,6 +51,9 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
         "limit": limit,
         "system_metrics": {
             "cpu_usage": cpu_usage,
-            "memory_usage": memory_usage
+            "memory_usage": mem.percent,
+            "memory_total": mem.total,
+            "memory_available": mem.available,
+            "memory_used": mem.used
         }
     }

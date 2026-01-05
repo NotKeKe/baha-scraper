@@ -35,13 +35,13 @@ async def main():
                 for title, bsn in all_themes:
                     scraper = Scraper(title, bsn)
                     SCRAPERS.append(scraper)
-                    await asyncio.sleep(0.0001)
+                    await asyncio.sleep(0.00001)
 
             
                 page_count += 1
                 update_status(f'fetching_all_themes_{page_count}')
             finally:
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(0.00001)
 
         update_status('fetching_all_themes_end')
         TASKS = [asyncio.create_task(scraper.scrape()) for scraper in SCRAPERS]
