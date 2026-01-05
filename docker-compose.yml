@@ -19,7 +19,7 @@ services:
     volumes:
       - ./data/warp:/var/lib/cloudflare-warp
 
-  baha-scraper:
+  scraper:
     build: .
     container_name: baha-scraper
     restart: always
