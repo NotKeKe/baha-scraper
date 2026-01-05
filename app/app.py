@@ -22,21 +22,29 @@ async def read_root():
 @app.get('/api/status')
 async def get_status(page: int = 1, limit: int = 20, q: str = ''):
     # Filter scrapers
-    filtered_scrapers = {}
+    filtered_items = []
     q = q.lower().strip()
     
+    # Create list of matching items first
     for bsn, status in Status.scrapers_status.items():
-        if not q or q in str(bsn).lower() or q in status.get('theme_title', '').lower():
-            filtered_scrapers[bsn] = status
+        # Ensure status is a dict
+        if not isinstance(status, dict):
+            continue
+            
+        title = status.get('theme_title', '')
+        if not q or q in str(bsn).lower() or q in title.lower():
+            filtered_items.append((bsn, status))
 
+    # Sort by BSN
+    filtered_items.sort(key=lambda x: x[0]) 
+    
     # Pagination
-    scrapers_list = list(filtered_scrapers.items())
-    # Sort by BSN or Title? BSN is string, maybe sort by start_time? let's just sort by BSN for stability
-    scrapers_list.sort(key=lambda x: x[0]) 
-
+    total_filtered = len(filtered_items)
     start = (page - 1) * limit
     end = start + limit
-    paginated_items = scrapers_list[start:end]
+    paginated_items = filtered_items[start:end]
+    
+    # Convert back to dict for response
     paginated_scrapers = dict(paginated_items)
     
     # Get System Metrics
@@ -49,7 +57,7 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
         "page_count": Status.page_count,
         "tasks_count": len(Status.tasks),
         "total_scrapers_count": len(Status.scrapers_status),
-        "filtered_count": len(scrapers_list),
+        "filtered_count": total_filtered,
         "page": page,
         "limit": limit,
         "system_metrics": {

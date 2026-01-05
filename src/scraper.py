@@ -9,6 +9,7 @@ import orjson
 import aiofiles
 import logging
 from typing import Any
+import random
 
 from .utils import HttpxClient, SEM, DATA_DIR, init_httpx_client, safe_filename
 from .status import Status
@@ -61,7 +62,10 @@ class Scraper:
 
             try:
                 resp = await HttpxClient.get(post_url)
-                if resp.status_code != 200: return
+                if resp.status_code != 200: 
+                    logger.info(f'Failed to get {post_url}, status code: {resp.status_code}')
+                    return
+                    
                 self._update_status('post_status', f'fetching_{post_url}')
                 soup = BeautifulSoup(resp.text, 'html.parser')
 
@@ -191,6 +195,8 @@ class Scraper:
                 self._update_status('post_status', f'fetched_{post_url}')
             except:
                 logger.error(f'Error while fetching {post_url}', exc_info=True)
+            finally:
+                await asyncio.sleep(random.uniform(1, 3)) # 休息 1-3 秒
 
     
     async def scrape(self):
