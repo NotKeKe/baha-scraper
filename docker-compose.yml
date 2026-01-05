@@ -7,8 +7,6 @@ services:
     restart: always
     device_cgroup_rules:
       - 'c 10:200 rwm'
-    ports:
-      - "1080:1080"
     environment:
       - WARP_SLEEP=2
     cap_add:

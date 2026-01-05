@@ -45,7 +45,7 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
         "scrapers_status": paginated_scrapers,
         "page_count": Status.page_count,
         "tasks_count": len(Status.tasks),
-        "total_scrapers_count": len(Status.scrapers),
+        "total_scrapers_count": len(Status.scrapers_status),
         "filtered_count": len(scrapers_list),
         "page": page,
         "limit": limit,

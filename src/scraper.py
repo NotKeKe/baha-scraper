@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class Scraper:
     def __init__(self, title: str, bsn: str):
-        self.title = title
+        self.title = title # theme title
         self.bsn = bsn
 
         self.running_tasks: list[asyncio.Task] = []
@@ -30,6 +30,8 @@ class Scraper:
         }   
 
     def _update_status(self, key: str, value: Any):
+        if key not in Status.scrapers_status[self.bsn]:
+            raise ValueError(f'Invalid key: {key}')
         Status.scrapers_status[self.bsn][key] = value
 
     async def _get_post_list(self) -> set[str]:
@@ -45,7 +47,7 @@ class Scraper:
             self._update_status('post_list_status', 'fetched')
             return set(urljoin(str(resp.url), a['href']) for a in all_a if a.get('href', '').startswith('C.php'))
         
-    async def _get_post(self, post_url: str):
+    async def _get_post(self, post_url: str): # C.php
         async with SEM:
             try:
                 resp = await HttpxClient.get(post_url)
