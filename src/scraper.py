@@ -140,10 +140,20 @@ class Scraper:
                     assert isinstance(div_button_bar, Tag)
                     like_count = div_button_bar.select('.gp a')[0].text.strip()
                     dislike_count = div_button_bar.select('.bp a')[0].text.strip()
+                    
+                    if like_count == '-': # - 代表沒人點
+                        like_count = 0
                     if dislike_count == '-': # - 代表沒人點
                         dislike_count = 0
-                    FINAL_RESULT['floors'][idx]['like_count'] = int(like_count)
-                    FINAL_RESULT['floors'][idx]['dislike_count'] = int(dislike_count)
+                        
+                    try:
+                        FINAL_RESULT['floors'][idx]['like_count'] = int(like_count)
+                    except:
+                        FINAL_RESULT['floors'][idx]['like_count'] = 1000 # 有可能出現為爆
+                    try:
+                        FINAL_RESULT['floors'][idx]['dislike_count'] = int(dislike_count)
+                    except:
+                        FINAL_RESULT['floors'][idx]['dislike_count'] = 1000 # 有可能出現為爆
                     
                     # 取得留言
                     comments = set()
