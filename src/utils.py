@@ -40,7 +40,7 @@ async def close_httpx_client():
 
 SCRAPERS: list[Scraper] = []
 
-SEM = asyncio.Semaphore(30)
+SEM = asyncio.Semaphore(5)
 
 DATA_DIR = Path('data')
 DATA_DIR.mkdir(exist_ok=True)

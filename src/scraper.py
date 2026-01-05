@@ -38,15 +38,36 @@ class Scraper:
         if key not in Status.scrapers_status[self.bsn]:
             raise ValueError(f'Invalid key: {key}')
         Status.scrapers_status[self.bsn][key] = value
+    
+    async def _fetch_with_retry(self, url: str, retries: int = 5) -> Any:
+        base_delay = 5
+        assert HttpxClient is not None
+        for i in range(retries):
+            try:
+                resp = await HttpxClient.get(url)
+                if resp.status_code == 429:
+                    wait_time = base_delay * (2 ** i) + random.uniform(0, 3)
+                    logger.warning(f"Got 429 for {url}, waiting {wait_time:.2f}s...")
+                    self._update_status('post_status', f'waiting_429_{int(wait_time)}s')
+                    await asyncio.sleep(wait_time)
+                    continue
+                return resp
+            except Exception as e:
+                logger.error(f"Error fetching {url}: {e}")
+                await asyncio.sleep(random.uniform(1, 3))
+        return None
 
     async def _get_post_list(self) -> set[str]:
         async with SEM:
             await init_httpx_client()
             assert HttpxClient is not None
 
-            resp = await HttpxClient.get(f'https://forum.gamer.com.tw/B.php?bsn={self.bsn}')
-            if resp.status_code != 200: return set()
             self._update_status('post_list_status', 'fetching')
+            resp = await self._fetch_with_retry(f'https://forum.gamer.com.tw/B.php?bsn={self.bsn}')
+            if not resp or resp.status_code != 200: 
+                self._update_status('post_list_status', 'error')
+                logger.info(f'Failed to get {self.bsn}\'s post list, status code: {resp.status_code if resp else "None"}')
+                return set()
             logger.info(f'Got {self.bsn}\'s post list.')
 
             soup = BeautifulSoup(resp.text, 'html.parser')
@@ -61,12 +82,12 @@ class Scraper:
             assert HttpxClient is not None
 
             try:
-                resp = await HttpxClient.get(post_url)
-                if resp.status_code != 200: 
-                    logger.info(f'Failed to get {post_url}, status code: {resp.status_code}')
+                self._update_status('post_status', f'fetching_{post_url}')
+                resp = await self._fetch_with_retry(post_url)
+                if not resp or resp.status_code != 200: 
+                    logger.info(f'Failed to get {post_url}, status code: {resp.status_code if resp else "None"}')
                     return
                     
-                self._update_status('post_status', f'fetching_{post_url}')
                 soup = BeautifulSoup(resp.text, 'html.parser')
 
                 # 該篇貼文的 標題

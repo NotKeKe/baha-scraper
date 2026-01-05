@@ -33,3 +33,4 @@ services:
       - HTTPS_PROXY=socks5://warp:1080
     volumes:
       - ./data/scraper:/app/data
+      - ./logs:/app/logs

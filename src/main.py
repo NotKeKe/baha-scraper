@@ -20,8 +20,17 @@ async def main():
         update_status('fetching_all_themes_start')
         while True:
             url = f'https://api.gamer.com.tw/forum/v1/board_list.php?category=&page={page_count}&origin=forum'
-            resp = await HttpxClient.get(url)
+            # Retry logic for 429
+            for _ in range(5):
+                resp = await HttpxClient.get(url)
+                if resp.status_code == 429:
+                    logger.warning(f"Got 429 for {url}, waiting 5s...")
+                    await asyncio.sleep(5)
+                    continue
+                break
+
             if resp.status_code != 200:
+                logger.error(f"Failed to fetch board list: {resp.status_code}")
                 break
 
             data = resp.json()
