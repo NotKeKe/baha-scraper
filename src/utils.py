@@ -16,19 +16,31 @@ if TYPE_CHECKING:
 TOP_SCRAPE_TASK: asyncio.Task | None = None
 
 _limit = httpx.Limits(max_keepalive_connections=51, max_connections=50)
-header = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+headers = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
 }
 
-
-HttpxClient: httpx.AsyncClient | None = httpx.AsyncClient(limits=_limit, headers=header, proxy=os.getenv("HTTP_PROXY"))
+HttpxClient: httpx.AsyncClient | None = httpx.AsyncClient(limits=_limit, headers=headers, proxy=os.getenv("HTTP_PROXY"))
 
 async def init_httpx_client():
     global HttpxClient
     if HttpxClient is None or HttpxClient.is_closed:
         HttpxClient = httpx.AsyncClient(
             limits=_limit, 
-            headers=header, 
+            headers=headers, 
             proxy=os.getenv("HTTP_PROXY")
         )
 
