@@ -2,6 +2,7 @@ import aiosqlite
 from pathlib import Path
 
 DB_PATH = "data/db/data.db"
+Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 async def init_tables(db_path: str | Path = DB_PATH):
     async with aiosqlite.connect(db_path) as db:
