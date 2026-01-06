@@ -39,6 +39,7 @@ async def close_httpx_client():
     HttpxClient = None
 
 SCRAPERS: list[Scraper] = []
+WRITE_DB_TASKS: list[asyncio.Task] = []
 
 SEM = asyncio.Semaphore(5)
 

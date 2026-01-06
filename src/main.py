@@ -2,6 +2,7 @@ import asyncio
 import logging
 import aiosqlite 
 
+from . import utils
 from .utils import HttpxClient, SCRAPERS, update_status, init_httpx_client, close_httpx_client
 from .scraper import Scraper
 from .append_to_db import *
@@ -69,10 +70,10 @@ async def main():
                     ]
 
                     # update to db
-                    await add_to_all_themes([
+                    utils.WRITE_DB_TASKS.append(asyncio.create_task(add_to_all_themes([
                         ThemeModel(title=title, bsn=bsn, page_count=page_count)
                         for title, bsn in current_page_themes
-                    ], db=conn)
+                    ], db=conn)))
 
                 # create scraper
                 for title, bsn in current_page_themes:
@@ -101,6 +102,17 @@ async def main():
         # close scraper
         for scraper in SCRAPERS:
             await scraper.close()
+
+        # close db write tasks
+        for task in utils.WRITE_DB_TASKS:
+            task.cancel()
+
+        try:
+            await asyncio.gather(*utils.WRITE_DB_TASKS)
+        except asyncio.CancelledError:
+            pass
+        except:
+            logger.error('Error while closing WRITE_DB_TASKS', exc_info=True)
 
         # close tasks for scraper
         for task in TASKS:

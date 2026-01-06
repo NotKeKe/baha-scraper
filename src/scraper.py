@@ -16,6 +16,8 @@ import random
 import aiosqlite
 
 from .append_to_db import get_post_info, add_to_post_info, add_to_all_posts, DB_PATH
+from .append_to_db.type import PostModel
+from . import utils
 from .utils import HttpxClient, SEM, DATA_DIR, init_httpx_client, safe_filename
 from .status import Status
 
@@ -104,8 +106,9 @@ class Scraper:
                 await asyncio.sleep(random.uniform(1, 3))
 
             # 存入快取
-            for url in all_urls:
-                await add_to_all_posts(url, self.bsn)
+            utils.WRITE_DB_TASKS.append(asyncio.create_task(
+                add_to_all_posts([PostModel(bsn=self.bsn, post_url=url) for url in all_urls])
+            ))
 
             self._update_status('post_list_status', 'fetched')
             return all_urls
@@ -281,6 +284,9 @@ class Scraper:
                     comments.sort(key=lambda x: int(x['floor'][1:])) # B1 -> 1
                     FINAL_RESULT['floors'][idx]['comments'] = comments
 
+                # 同步到資料庫
+                await add_to_post_info(post_url, title, orjson.dumps(FINAL_RESULT['floors']).decode())
+
                 # 寫入檔案
                 async with self.WRITE_LOCK:
                     if self.is_first_run:
@@ -291,9 +297,6 @@ class Scraper:
 
                     async with aiofiles.open(DATA_DIR / f'{self.bsn}-{safe_filename(self.title)}.jsonl', 'ab') as f:
                         await f.write(orjson.dumps(FINAL_RESULT) + b'\n')
-
-                # 同步到資料庫
-                await add_to_post_info(post_url, title, orjson.dumps(FINAL_RESULT['floors']).decode())
 
                 logger.info(f'Wrote {post_url}')
                 self._update_status('post_status', f'fetched_{post_url}')

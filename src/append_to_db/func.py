@@ -1,7 +1,7 @@
 import aiosqlite
 from typing import Optional, Any
 
-from .type import ThemeModel
+from .type import ThemeModel, PostModel
 from .client import DB_PATH
 
 
@@ -32,18 +32,27 @@ async def add_to_all_themes(theme: ThemeModel | list[ThemeModel], db: Optional[a
     ''', (theme.bsn, theme.title, theme.page_count))
     await db.commit()
 
-async def add_to_all_posts(post_url: str, bsn: str, db: Optional[aiosqlite.Connection] = None):
+async def add_to_all_posts(post: PostModel | list[PostModel], db: Optional[aiosqlite.Connection] = None):
     if db is None:
         async with aiosqlite.connect(DB_PATH) as conn:
-            return await add_to_all_posts(post_url, bsn, db=conn)
+            return await add_to_all_posts(post, db=conn)
 
-    await db.execute('''
+    if isinstance(post, list):
+        await db.executemany('''
         INSERT INTO all_posts (post_url, bsn)
         VALUES (?, ?)
         ON CONFLICT (post_url) DO UPDATE SET 
             bsn = excluded.bsn,
             updated_at = CURRENT_TIMESTAMP
-    ''', (post_url, bsn))
+    ''', [(post.post_url, post.bsn) for post in post])
+    else:
+        await db.execute('''
+        INSERT INTO all_posts (post_url, bsn)
+        VALUES (?, ?)
+        ON CONFLICT (post_url) DO UPDATE SET 
+            bsn = excluded.bsn,
+            updated_at = CURRENT_TIMESTAMP
+    ''', (post.post_url, post.bsn))
     await db.commit()
 
 async def add_to_post_info(post_url: str, title: str, floors: str, db: Optional[aiosqlite.Connection] = None):
