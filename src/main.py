@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import aiosqlite 
 
 from . import utils
 from .utils import HttpxClient, SCRAPERS, update_status, init_httpx_client, close_httpx_client
