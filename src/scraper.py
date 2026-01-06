@@ -1,3 +1,5 @@
+# 一托答辯的代碼
+
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from urllib.parse import urljoin
@@ -11,9 +13,9 @@ import aiofiles
 import logging
 from typing import Any
 import random
+import aiosqlite
 
-from src.main import page_count
-
+from .append_to_db import get_post_info, add_to_post_info, add_to_all_posts, DB_PATH
 from .utils import HttpxClient, SEM, DATA_DIR, init_httpx_client, safe_filename
 from .status import Status
 
@@ -66,6 +68,23 @@ class Scraper:
             assert HttpxClient is not None
 
             self._update_status('post_list_status', 'fetching')
+
+            # 快取檢查
+            async with aiosqlite.connect(DB_PATH) as db:
+                cursor = await db.execute("""
+                    SELECT post_url FROM all_posts 
+                    WHERE bsn = ? 
+                    AND updated_at >= datetime('now', '-1 hour')
+                """, (self.bsn,))
+                cached_rows = await cursor.fetchall()
+                
+                if cached_rows:
+                    cached_list = list(cached_rows)
+                    logger.info(f"Cache hit for post list: {self.bsn} ({len(cached_list)} posts)")
+                    self._update_status('post_list_status', 'fetched')
+                    return set(row[0] for row in cached_list)
+
+            # 沒有快取，執行爬取
             page_count = 1
             all_urls = set()
 
@@ -73,10 +92,7 @@ class Scraper:
                 resp = await self._fetch_with_retry(f'https://forum.gamer.com.tw/B.php?page={page_count}&bsn={self.bsn}')
                 if not resp or resp.status_code != 200: 
                     logger.info(f'Failed to get {self.bsn}\'s post list, status code: {resp.status_code if resp else "None"}')
-                    self._update_status('post_list_status', 'fetched')
-
-                    # 出錯就直接回傳
-                    return all_urls
+                    break
 
                 soup = BeautifulSoup(resp.text, 'html.parser')
                 
@@ -85,16 +101,58 @@ class Scraper:
                 all_urls.update(_all_urls)
                 
                 page_count += 1
-
                 await asyncio.sleep(random.uniform(1, 3))
 
+            # 存入快取
+            for url in all_urls:
+                await add_to_all_posts(url, self.bsn)
+
+            self._update_status('post_list_status', 'fetched')
+            return all_urls
+
+
     async def _get_post(self, post_url: str): # C.php, 單一貼文
+        # 這長度大概算是一種屎山代碼了哈哈
         async with SEM:
             await init_httpx_client()
             assert HttpxClient is not None
 
             try:
                 self._update_status('post_status', f'fetching_{post_url}')
+
+                # 快取
+                cached_data = await get_post_info(post_url)
+                
+                if cached_data:
+                    floors = orjson.loads(cached_data['floors'])
+                    if floors and len(floors) > 0:
+                        iso_time = floors[0].get('time')
+                        if iso_time:
+                            post_time = datetime.fromisoformat(iso_time)
+                            # 如果樓主貼文超過 30 天，直接使用快取
+                            # 因為我希望他有機會的話，去更新留言。一篇貼聞過 30 天大概也不會火了 (吧
+                            if (datetime.now(timezone.utc) - post_time).days > 30:
+                                CACHED_RESULT = {
+                                    'title': cached_data['title'],
+                                    'url': post_url,
+                                    'floors': floors
+                                }
+                                # 寫入檔案
+                                async with self.WRITE_LOCK:
+                                    # 第一次跑就清空檔案
+                                    if self.is_first_run:
+                                        self.is_first_run = False
+                                        async with aiofiles.open(DATA_DIR / f'{self.bsn}-{safe_filename(self.title)}.jsonl', 'wb') as f:
+                                            await f.write(b'')
+                                    async with aiofiles.open(DATA_DIR / f'{self.bsn}-{safe_filename(self.title)}.jsonl', 'ab') as f:
+                                        await f.write(orjson.dumps(CACHED_RESULT) + b'\n')
+
+                                logger.info(f'Wrote {post_url} (Cache hit)')
+                                self._update_status('post_status', f'fetched_{post_url}')
+                                return
+
+
+
                 resp = await self._fetch_with_retry(post_url)
                 if not resp or resp.status_code != 200: 
                     logger.info(f'Failed to get {post_url}, status code: {resp.status_code if resp else "None"}')
@@ -223,7 +281,7 @@ class Scraper:
                     comments.sort(key=lambda x: int(x['floor'][1:])) # B1 -> 1
                     FINAL_RESULT['floors'][idx]['comments'] = comments
 
-                # 寫入
+                # 寫入檔案
                 async with self.WRITE_LOCK:
                     if self.is_first_run:
                         # 第一次啟動的話就清空原本的檔案，因為可能會手動進行多次爬蟲
@@ -233,6 +291,9 @@ class Scraper:
 
                     async with aiofiles.open(DATA_DIR / f'{self.bsn}-{safe_filename(self.title)}.jsonl', 'ab') as f:
                         await f.write(orjson.dumps(FINAL_RESULT) + b'\n')
+
+                # 同步到資料庫
+                await add_to_post_info(post_url, title, orjson.dumps(FINAL_RESULT['floors']).decode())
 
                 logger.info(f'Wrote {post_url}')
                 self._update_status('post_status', f'fetched_{post_url}')

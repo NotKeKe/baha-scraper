@@ -1,7 +1,10 @@
 import aiosqlite
+from pathlib import Path
 
-async def init_tables():
-    async with aiosqlite.connect("data/db.db") as db:
+DB_PATH = "data/db/data.db"
+
+async def init_tables(db_path: str | Path = DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         await db.execute("PRAGMA journal_mode = WAL") # 讀寫並行
 
 
@@ -15,6 +18,7 @@ async def init_tables():
             CREATE TABLE IF NOT EXISTS all_themes (
                 bsn TEXT PRIMARY KEY,
                 title TEXT,
+                page_count INTEGER,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -49,3 +53,10 @@ async def init_tables():
         """)
 
         await db.commit()
+
+if __name__ == '__main__':
+    import asyncio
+
+    path = Path.cwd() / "data" / "db" / "data.db"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    asyncio.run(init_tables(path))
