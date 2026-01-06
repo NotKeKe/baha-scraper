@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             globalStatusEl.style.borderColor = getStatusColor(data.curr_status);
 
             pageCountEl.textContent = data.page_count;
-            activeScrapersEl.textContent = Object.values(data.scrapers_status).filter(s => s.post_status !== 'none').length; // Estimate
+            activeScrapersEl.textContent = data.active_scrapers_count;
             totalScrapersEl.textContent = data.total_scrapers_count;
             tasksCountEl.textContent = data.tasks_count;
             cpuUsageEl.innerHTML = `

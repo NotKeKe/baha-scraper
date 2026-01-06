@@ -38,6 +38,12 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
     # Sort by BSN
     filtered_items.sort(key=lambda x: x[0]) 
     
+    # Calculate active scrapers count (before pagination)
+    active_scrapers_count = sum(
+        1 for _, status in filtered_items 
+        if isinstance(status, dict) and status.get('post_status') != 'none'
+    )
+    
     # Pagination
     total_filtered = len(filtered_items)
     start = (page - 1) * limit
@@ -57,6 +63,7 @@ async def get_status(page: int = 1, limit: int = 20, q: str = ''):
         "page_count": Status.page_count,
         "tasks_count": len(Status.tasks),
         "total_scrapers_count": len(Status.scrapers_status),
+        "active_scrapers_count": active_scrapers_count,
         "filtered_count": total_filtered,
         "page": page,
         "limit": limit,
