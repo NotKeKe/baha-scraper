@@ -93,7 +93,8 @@ async def main():
 
     except (asyncio.CancelledError, KeyboardInterrupt): 
         pass
-
+    except:
+        logger.error('Error while scraping', exc_info=True)
     finally:
         logger.info('Closing...')
 
