@@ -13,9 +13,8 @@ import aiofiles
 import logging
 from typing import Any
 import random
-import aiosqlite
 
-from .append_to_db import get_post_info, add_to_post_info, add_to_all_posts, DB_PATH
+from .append_to_db import get_post_info, add_to_post_info, add_to_all_posts, get_client as get_db_client
 from .append_to_db.type import PostModel
 from . import utils
 from .utils import HttpxClient, SEM, DATA_DIR, init_httpx_client, safe_filename
@@ -72,19 +71,19 @@ class Scraper:
             self._update_status('post_list_status', 'fetching')
 
             # 快取檢查
-            async with aiosqlite.connect(DB_PATH) as db:
-                cursor = await db.execute("""
-                    SELECT post_url FROM all_posts 
-                    WHERE bsn = ? 
-                    AND updated_at >= datetime('now', '-1 hour')
-                """, (self.bsn,))
-                cached_rows = await cursor.fetchall()
+            db = await get_db_client()
+            cursor = await db.execute("""
+                SELECT post_url FROM all_posts 
+                WHERE bsn = ? 
+                AND updated_at >= datetime('now', '-1 hour')
+            """, (self.bsn,))
+            cached_rows = await cursor.fetchall()
                 
-                if cached_rows:
-                    cached_list = list(cached_rows)
-                    logger.info(f"Cache hit for post list: {self.bsn} ({len(cached_list)} posts)")
-                    self._update_status('post_list_status', 'fetched')
-                    return set(row[0] for row in cached_list)
+            if cached_rows:
+                cached_list = list(cached_rows)
+                logger.info(f"Cache hit for post list: {self.bsn} ({len(cached_list)} posts)")
+                self._update_status('post_list_status', 'fetched')
+                return set(row[0] for row in cached_list)
 
             # 沒有快取，執行爬取
             page_count = 1
