@@ -64,7 +64,7 @@ async def main():
                         break # 資料抓完了，跳出 while
 
                     current_page_themes = [
-                        (item['title'].strip(), item["bsn"]) 
+                        (item['title'].strip(), str(item["bsn"])) 
                         for item in all_list
                     ]
 
