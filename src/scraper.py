@@ -53,13 +53,13 @@ class Scraper:
                 resp = await HttpxClient.get(url)
                 if resp.status_code == 429:
                     if not resp.headers.get('Retry-After'):
-                        wait_time = base_delay * (2 ** i) + random.uniform(0, 3)
+                        wait_time = base_delay * (2 ** i)
                     else:
                         wait_time = int(resp.headers.get('Retry-After'))
                         
                     logger.warning(f"Got 429 for {url}, waiting {wait_time:.2f}s(isRetryAfter: {resp.headers.get('Retry-After') is not None})...")
                     self._update_status('post_status', f'waiting_429_{int(wait_time)}s')
-                    await asyncio.sleep(wait_time)
+                    await asyncio.sleep(wait_time + random.uniform(5, 10))
                     continue
                 return resp
             except Exception as e:
@@ -106,7 +106,7 @@ class Scraper:
                 all_urls.update(_all_urls)
                 
                 page_count += 1
-                await asyncio.sleep(random.uniform(1, 3))
+                await asyncio.sleep(random.uniform(5, 10))
 
             # 存入快取
             utils.WRITE_DB_TASKS.append(asyncio.create_task(
@@ -306,7 +306,7 @@ class Scraper:
             except:
                 logger.error(f'Error while fetching {post_url}', exc_info=True)
             finally:
-                await asyncio.sleep(random.uniform(1, 3)) # 休息 1-3 秒
+                await asyncio.sleep(random.uniform(5, 10)) # 休息 5-10 秒
 
     
     async def scrape(self):

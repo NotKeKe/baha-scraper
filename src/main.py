@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 
 from . import utils
 from .utils import HttpxClient, SCRAPERS, update_status, init_httpx_client, close_httpx_client
@@ -61,7 +62,7 @@ async def main():
                             wait_time = 5
 
                         logger.warning(f"Got 429 for {url}, waiting {wait_time}s(isRetryAfter: {resp.headers.get('Retry-After') is not None})...")
-                        await asyncio.sleep(wait_time)
+                        await asyncio.sleep(wait_time + random.uniform(5, 10))
                         continue
                     break
 
