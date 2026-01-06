@@ -55,8 +55,13 @@ async def main():
                 for _ in range(5):
                     resp = await HttpxClient.get(url)
                     if resp.status_code == 429:
-                        logger.warning(f"Got 429 for {url}, waiting 5s...")
-                        await asyncio.sleep(5)
+                        if resp.headers.get('Retry-After'):
+                            wait_time = int(resp.headers.get('Retry-After'))
+                        else:
+                            wait_time = 5
+
+                        logger.warning(f"Got 429 for {url}, waiting {wait_time}s(isRetryAfter: {resp.headers.get('Retry-After') is not None})...")
+                        await asyncio.sleep(wait_time)
                         continue
                     break
 

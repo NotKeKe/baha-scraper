@@ -52,8 +52,12 @@ class Scraper:
             try:
                 resp = await HttpxClient.get(url)
                 if resp.status_code == 429:
-                    wait_time = base_delay * (2 ** i) + random.uniform(0, 3)
-                    logger.warning(f"Got 429 for {url}, waiting {wait_time:.2f}s...")
+                    if not resp.headers.get('Retry-After'):
+                        wait_time = base_delay * (2 ** i) + random.uniform(0, 3)
+                    else:
+                        wait_time = int(resp.headers.get('Retry-After'))
+                        
+                    logger.warning(f"Got 429 for {url}, waiting {wait_time:.2f}s(isRetryAfter: {resp.headers.get('Retry-After') is not None})...")
                     self._update_status('post_status', f'waiting_429_{int(wait_time)}s')
                     await asyncio.sleep(wait_time)
                     continue
